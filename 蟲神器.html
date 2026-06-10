@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>蟲神器 2人対戦シミュレーター</title>
+<style>
+  body{font-family:"Helvetica Neue",Arial,sans-serif;background:#1a202c;color:#e2e8f0;margin:0;padding:10px;display:flex;flex-direction:column;gap:15px;user-select:none}
+  header{text-align:center;background:#2d3748;padding:10px;border-radius:8px}
+  h1{font-size:20px;margin:0 0 10px 0;color:#38bdf8}
+  .controls {display: flex; justify-content: center; gap: 15px; margin-bottom: 10px; align-items: center; font-size: 14px;}
+  select {padding: 4px; border-radius: 4px; background: #4a5568; color: white; border: 1px solid #718096;}
+  h3{margin:0 0 5px 0;font-size:12px;color:#facc15;border-bottom:1px solid #4a5568;padding-bottom:2px}
+  .game-info{font-size:14px;font-weight:bold;color:#fbcfe8;margin-top:5px}
+  .player-area{padding:10px;border-radius:8px;display:flex;flex-direction:column;gap:8px;position:relative}
+  #p2-area{background:rgba(239,68,68,0.08);border:2px solid #ef4444}
+  #p1-area{background:rgba(59,130,246,0.08);border:2px solid #3b82f6}
+  .active-turn{box-shadow:0 0 15px rgba(250,204,21,0.5);border-color:#facc15 !important}
+  .zone{border:2px dashed #4a5568;border-radius:6px;padding:6px;min-height:60px;display:flex;flex-wrap:wrap;gap:8px;background:rgba(0,0,0,0.25)}
+  .card{color:#1a202c;border-radius:4px;padding:4px;width:100px;min-height:55px;font-size:11px;font-weight:bold;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;box-shadow:1px 1px 3px rgba(0,0,0,0.4);position:relative;transition:transform 0.1s}
+  .card:hover{transform:scale(1.05);z-index:10;outline:2px solid #38bdf8}
+  .c-blue{background:#93c5fd;border:2px solid #2563eb}
+  .c-green{background:#86efac;border:2px solid #16a34a}
+  .c-red{background:#fca5a5;border:2px solid #dc2626}
+  .c-void{background:#e2e2e2;border:2px solid #718096}
+.deck-card{background:#4f46e5;color:white;border:2px solid #3730a3;cursor:default}
+  .deck  -card:hover{transform:none;outline:none}
+  .nawabari-card{background:#b91c1c;color:white;border:2px solid #7f1d1d;cursor:default}
+  .nawabari-card:hover{transform:none;outline:none}
+  .tapped-card{opacity:0.5;background:#a0aec0 !important;border-color:#4a5568 !important}
+  .cost-badge{position:absolute;top:1px;left:2px;font-size:9px;background:black;color:white;padding:0 3px;border-radius:3px}
+  .hp-badge{position:absolute;top:1px;right:2px;font-size:9px;background:#dc2626;color:white;padding:0 3px;border-radius:3px}
+  .type-badge{position:absolute;bottom:1px;right:2px;font-size:8px;color:#4a5568}
+  .equip-list{font-size:9px;color:#b91c1c;margin-top:4px;border-top:1px solid #718096;padding-top:2px;width:100%}
+  .btn{background:#10b981;color:white;border:none;padding:6px 12px;font-size:13px;border-radius:4px;cursor:pointer;font-weight:bold;margin:2px;transition:background 0.2s}
+  .btn:hover{background:#34d399}
+  .btn-danger{background:#ef4444}
+  .btn-danger:hover{background:#f87171}
+  .status-bar{display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.4);padding:5px 10px;border-radius:4px;font-size:13px}
+  .flex-row{display:flex;gap:10px}
+  .flex-1{flex:1}
+  .phase-indicator{display:flex;justify-content:center;align-items:center;gap:15px;margin-bottom:10px}
+  .phase-step{background:#4a5568;color:#a0aec0;padding:6px 20px;border-radius:20px;font-size:14px;font-weight:bold;border:2px solid #2d3748;transition:all 0.3s}
+  .phase-step.active{background:#f59e0b;color:white;border-color:#fcd34d;box-shadow:0 0 12px rgba(245,158,11,0.8);transform:scale(1.1)}
+  .phase-arrow{color:#4a5568;font-weight:bold}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>蟲神器 2人対戦シミュレーター</h1>
+  <div class="controls">
+    <div>
+      <label for="p1-deck-select">P1 デッキ:</label>
+      <select id="p1-deck-select">
+        <option value="semiTaikyu">セミ耐久デッキ</option>
+        <option value="giantKamikirimushi">巨大カミキリムシデッキ</option>
+        <option value="yuchuAburamushi">幼虫アブラムシアグロ</option>
+        <option value="ikitaKaseki">生きた化石</option>
+        <option value="baseDeck">ゴクラク転生コントロール</option>
+      </select>
+    </div>
+    <button class="btn btn-danger" onclick="setupGame()">ゲーム開始（初期化＆シャッフル）</button>
+    <div>
+      <label for="p2-deck-select">P2 デッキ:</label>
+      <select id="p2-deck-select">
+        <option value="semiTaikyu">セミ耐久デッキ</option>
+        <option value="giantKamikirimushi">巨大カミキリムシデッキ</option>
+        <option value="yuchuAburamushi">幼虫アブラムシアグロ</option>
+        <option value="ikitaKaseki">生きた化石</option>
+        <option value="baseDeck">ゴクラク転生コントロール</option>
+      </select>
+    </div>
+  </div>
+  <div id="turn-display" class="game-info">ターン: - | 手番: -</div>
+</header>
+
+<div id="p1-area" class="player-area">
+  <div class="status-bar">
+    <span id="p1-label" style="color:#3b82f6; font-weight:bold;">プレイヤー1</span>
+    <span id="p1-status">エサ: 0枚 | 使用可能コスト: 0</span>
+  </div>
+  <div class="flex-row">
+    <div class="flex-1"><h3>山札</h3><div id="p1-deck" class="zone"></div></div>
+    <div class="flex-1"><h3>捨て札</h3><div id="p1-grave" class="zone"></div></div>
+  </div>
+  <div><h3>手札</h3><div id="p1-hand" class="zone"></div></div>
+  <div><h3>餌場</h3><div id="p1-mana" class="zone"></div></div>
+  <div><h3>場</h3><div id="p1-field" class="zone"></div></div>
+  <div><h3>縄張り</h3><div id="p1-nawabari" class="zone"></div></div>
+</div>
+
+<div style="text-align: center; background: #2d3748; padding: 15px; border-radius: 8px;">
+  <div class="phase-indicator">
+    <div id="step-draw" class="phase-step">ドロー</div>
+    <div class="phase-arrow">▶</div>
+    <div id="step-set" class="phase-step">セット</div>
+    <div class="phase-arrow">▶</div>
+    <div id="step-main" class="phase-step">メイン</div>
+  </div>
+  <button id="phase-btn" class="btn" style="font-size: 16px; padding: 8px 20px;" onclick="nextPhase()">ゲームを開始してください</button>
+</div>
+
+<div id="p2-area" class="player-area">
+  <div class="status-bar">
+    <span id="p2-label" style="color:#ef4444; font-weight:bold;">プレイヤー2</span>
+    <span id="p2-status">エサ: 0枚 | 今ターンのコスト: 0</span>
+  </div>
+  <div><h3>縄張り</h3><div id="p2-nawabari" class="zone"></div></div>
+  <div><h3>場</h3><div id="p2-field" class="zone"></div></div>
+  <div><h3>餌場</h3><div id="p2-mana" class="zone"></div></div>
+  <div><h3>手札</h3><div id="p2-hand" class="zone"></div></div>
+  <div class="flex-row">
+    <div class="flex-1"><h3>山札</h3><div id="p2-deck" class="zone"></div></div>
+    <div class="flex-1"><h3>捨て札</h3><div id="p2-grave" class="zone"></div></div>
+  </div>
+</div>
+
+<script>
+const cardDatabase = {
+  "オオカレエダカマキリ": { cost: 6, type: "蟲", color: "red", hp: 1700, skills: ["神のカマ斬撃 (1000)", "ドラゴン螳螂拳 (700) ※1回限"] },
+  "ゴクラクトリバネアゲハ": { cost: 6, type: "蟲", color: "blue", hp: 1800, skills: ["神の吸引 (1000)", "〈極楽還り〉 (0)"] },
+  "ユウレイヒレアシナナフシ": { cost: 6, type: "蟲", color: "green", hp: 1600, skills: ["神のヒレ脚 (1000)", "〈霊体〉 (0)"] },
+  "テナガカミキリ": { cost: 6, type: "蟲", color: "green", hp: 1700, skills: ["神のキバ無双 (1000)", "テナガ無双 (400) ※同色2体対象（同名なら+500）"], family: "カミキリムシ科" },
+  "テナガカミキリ（新）": { cost: 6, type: "蟲", color: "green", hp: 1700, skills: ["神のキバ無双 (1000)", "テナガ無双 (400) ※同色2体対象（同名なら+500）"], family: "カミキリムシ科" },
+  "オオミズアオ": { cost: 5, type: "蟲", color: "void", hp: 1200, skills: ["はばたく (800)", "〈月光〉 (0)"] },
+  "白銀蜘蛛の糸": { cost: 6, type: "強化", color: "void" },
+  "草薙の劫火": { cost: 5, type: "術", color: "void" },
+  "贄虫の転生": { cost: 3, type: "術", color: "void" },
+  "空蝉の皮鎧": { cost: 2, type: "強化", color: "void" },
+  "蜉蝣の閃き": { cost: 1, type: "術", color: "void" },
+  "蜜蝋の壁": { cost: 0, type: "術", color: "void" },
+  "玉響の蠢き": { cost: 0, type: "術", color: "void" },
+  "蟻の収穫": { cost: 0, type: "術", color: "void" },
+  "息吹の解放": { cost: 0, type: "術", color: "void" },
+  "テイオウムカシヤンマ": { cost: 6, type: "蟲", color: "red", hp: 1500, skills: ["神の襲撃 (1100)", "〈生きた化石〉 (0)"] },
+  "ムカシヤンマ": { cost: 4, type: "蟲", color: "red", hp: 600, skills: ["とびかかる (600)", "〈生きた化石〉 (0)"] },
+  "ムカシトンボ": { cost: 2, type: "蟲", color: "red", hp: 300, skills: ["とびかかる (300)", "〈生きた化石〉 (0)"] },
+  "マンディブラリスフタマタクワガタ": { cost: 5, type: "蟲", color: "blue", hp: 1400, skills: ["オオアゴバサミ (1000)", "〈狂暴化〉 (0)"] },
+  "ヘラクレスオオカブト": { cost: 6, type: "蟲", color: "blue", hp: 1600, skills: ["神のツノ突進 (1000)", "ヘラクレス投げ (0) ※1回限"] },
+  "ロードハウナナフシ": { cost: 5, type: "蟲", color: "green", hp: 1200, skills: ["かぶりつく (800)", "〈擬態〉 (0)"] }, 
+  "テナガカミキリ（旧）": { cost: 5, type: "蟲", color: "green", hp: 1200, skills: ["キバ無双 (800)", "テナガ攻撃 (300) ※2体対象"], family: "カミキリムシ科" },
+  "オオシオカラトンボ": { cost: 3, type: "蟲", color: "red", hp: 500, skills: ["とびかかる (500)", "〈塩辛〉 (0)"] },
+  "ゴライアスオオツノハナムグリ": { cost: 5, type: "蟲", color: "blue", hp: 800, skills: ["ふみつぶす (500)", "〈とびだす〉 (0)"] },
+  "瀬戸際の虫時雨": { cost: 4, type: "術", color: "void" },
+  "虹の架け橋": { cost: 1, type: "術", color: "void" },
+  "刺蝿の血盟": { cost: 4, type: "術", color: "void" },
+  "古の蜻蛉切": { cost: 0, type: "強化", color: "void" },
+  "ゴイシシジミ（幼虫）": { cost: 1, type: "蟲", color: "red", hp: 100, skills: ["かじる (200)", "〈好物〉自分のエサ場にあるアブラムシ科の虫1つにつき、この虫の体力と攻撃力を100増やす。"] },
+  "セミヤドリガ（幼虫）": { cost: 1, type: "蟲", color: "red", hp: 200, skills: ["すいつく (200)", "〈セミ宿り〉自分の場にセミ科の虫がいるとき、この虫の体力と攻撃力を100増やし、相手はこれ以外の虫を攻撃できない。"] },
+  "チッチゼミ": { cost: 1, type: "蟲", color: "blue", hp: 100, skills: ["しぼりとる (200)", "〈とびだす〉これを縄張りから引いたとき、自分の場に＜とびだす＞の技を持つ虫がいなければ、これを場に出してもよい。"], family: "セミ科" },
+  "イラガセイボウ": { cost: 1, type: "蟲", color: "blue", hp: 200, skills: ["寄生攻撃 (200)", "〈食い破る〉自分の場に（幼虫）の虫がいるとき、それを破壊し、コストを支払わずにこの虫を場に出してもよい。"] },
+  "ゴイシシジミ": { cost: 1, type: "蟲", color: "blue", hp: 100, skills: ["すいとる (200)", "〈好物〉自分のエサ場にあるアブラムシ科の虫1つにつき、この虫の体力と攻撃力を100増やす。"] },
+  "ワタアブラムシ": { cost: 1, type: "蟲", color: "green", hp: 300, skills: ["すう (100)"], family: "アブラムシ科" },
+  "オオミノガ（幼虫）": { cost: 1, type: "蟲", color: "green", hp: 300, skills: ["くいつく (100)", "ミノにこもる (0) ※次の相手のターンの間、この虫の体力を200増やす。"] },
+  "ササコナフキツノアブラムシ": { cost: 1, type: "蟲", color: "green", hp: 200, skills: ["すう (200)"], family: "アブラムシ科" },
+  "小蝿の落とし子": { cost: 1, type: "術", color: "void" },
+  "金色の顎門": { cost: 0, type: "術", color: "void" },
+
+  "オオキバウスバカミキリ": { cost: 6, type: "蟲", color: "green", hp: 1700, skills: ["神のキバ無双 (1200)"], family: "カミキリムシ科" },
+  "タイタンオオウスバカミキリ": { cost: 6, type: "蟲", color: "green", hp: 1500, skills: ["神のキバ無双 (1000)", "〈巨大甲虫〉自分のエサが8つ以上あるとき、この虫の攻撃力と体力を1000増やす。"], family: "カミキリムシ科" },
+  "アシナガオオコノハギス": { cost: 5, type: "蟲", color: "green", hp: 1300, skills: ["かみちぎる (700)", "〈巨大昆虫〉自分のエサが8つ以上あるとき、この虫の攻撃力と体力を500増やす。"] },
+  "ホウセキゾウムシ": { cost: 3, type: "蟲", color: "green", hp: 700, skills: ["くいあさる (200)", "〈宝石昆虫〉これが虫の攻撃により破壊されたとき、この虫をエサ場に置く。"] },
+  "グンジョウオオコブハムシ": { cost: 2, type: "蟲", color: "green", hp: 300, skills: ["くいあさる (200)", "〈宝石昆虫〉これが虫の攻撃により破壊されたとき、この虫をエサ場に置く。"] },
+  "神木の息吹": { cost: 6, type: "術", color: "void" },
+  "蜜絶の翠境": { cost: 1, type: "強化", color: "void" },
+  "天牛の錦顎": { cost: 0, type: "強化", color: "void" },
+
+  "リオック": { cost: 5, type: "蟲", color: "red", hp: 800, skills: ["かみちぎる (600)", "〈エサにする〉これを場に出すとき、コストを支払う代わりに自分の場の虫を2つ選び、破壊してもよい。"] },
+  "テイオウゼミ": { cost: 5, type: "蟲", color: "blue", hp: 1000, skills: ["しぼりとる (600)", "〈セミの帝王〉これが場に出たとき、自分の捨て札からセミ科の虫を1つ選び、場に出してもよい。その虫はこのターン攻撃できない。"], family: "セミ科" },
+ "クロテイオウゼミ": { cost: 5, type: "蟲", color: "blue", hp: 1300, skills: ["樹液吸収 (700) ※この技により相手が縄張りを引いたとき、相手のエサ場にある虫を1つ選び裏返してもよい。それが青なら、もう1つの青のエサを選び裏返してもよい。", "合唱 (900) ※自分の場にセミ科の虫が2つ以上必要"], family: "セミ科" },
+  "叛逆の蛮勇": { cost: 1, type: "術", color: "void" },
+  "繚乱の足掻き": { cost: 0, type: "術", color: "void" }
+};
+
+function getCleanName(name) {
+  if (!name) return "";
+  return name.replace('_表', '').replace('_裏', '');
+}
+
+function getDisplayName(name) {
+  if (!name) return "";
+  return getCleanName(name).replace('（新）', '');
+}
+
+let state = {
+  turnCount: 0, firstPlayer: 'p1', activePlayer: 'p1', phase: 'setup', hasSetManaThisTurn: false,
+  p1: { deck: [], hand: [], field: [], mana: [], grave: [], nawabari: [], cost: 0, gekkouActive: false },
+  p2: { deck: [], hand: [], field: [], mana: [], grave: [], nawabari: [], cost: 0, gekkouActive: false }
+};
+
+function getCardCost(name, playerObj) {
+  const data = cardDatabase[getCleanName(name)];
+  if (!data) return 0;
+  let currentCost = data.cost;
+  if (playerObj) {
+    const isLivingFossil = data.skills && data.skills.some(s => s.includes("〈生きた化石〉"));
+    if (isLivingFossil) {
+      const fossilCount = playerObj.grave.filter(c => cardDatabase[getCleanName(c)]?.skills?.some(s => s.includes("〈生きた化石〉"))).length;
+      currentCost -= fossilCount;
+    }
+    if (name.includes("ムカシトンボ") || name.includes("ムカシヤンマ")) {
+      currentCost -= playerObj.grave.filter(c => c === "古の蜻蛉切").length;
+    }
+  }
+  return Math.max(0, currentCost);
+}
+
+function getKobutsuBonus(bugName, playerObj) {
+  const data = cardDatabase[getCleanName(bugName)];
+  if (!data || !data.skills || !data.skills.some(s => s.includes("〈好物〉"))) return 0;
+  let count = 0;
+  playerObj.mana.forEach(m => {
+    if (m.endsWith('_裏')) return;
+    let clean = getCleanName(m);
+    if (cardDatabase[clean]?.family === "アブラムシ科" || clean === "ワタアブラムシ" || clean === "ササコナフキツノアブラムシ") count++;
+  });
+  return count * 100;
+}
+
+function getMaxHp(bugObj, playerObj) {
+  const data = cardDatabase[getCleanName(bugObj.name)];
+  if (!data) return 0;
+  let maxHp = data.hp || 0;
+  
+  if (bugObj.equips && bugObj.equips.includes("古の蜻蛉切")) maxHp += 300;
+  maxHp += getKobutsuBonus(bugObj.name, playerObj);
+  if (bugObj.minoActive) maxHp += 200; 
+  if (bugObj.name === "セミヤドリガ（幼虫）" && !bugObj.lostAbility && playerObj.field.some(b => b.name.includes("ゼミ") || cardDatabase[getCleanName(b.name)]?.family === "セミ科")) maxHp += 100; 
+
+  if (!bugObj.lostAbility && data.skills) {
+    if (data.skills.some(s => s.includes("〈巨大甲虫〉")) && playerObj.mana.length >= 8) maxHp += 1000;
+    if (data.skills.some(s => s.includes("〈巨大昆虫〉")) && playerObj.mana.length >= 8) maxHp += 500;
+  }
+  if (bugObj.equips && bugObj.equips.includes("蜜絶の翠境")) {
+    maxHp += (playerObj.mana.length >= 6) ? 800 : 400;
+  }
+  if (bugObj.equips && bugObj.equips.includes("天牛の錦顎")) {
+    maxHp += 300;
+  }
+
+  return maxHp;
+}
+
+function getColorMultiplier(atkColor, defColor, defEquips = []) {
+  if (defEquips.includes("天牛の錦顎")) return 1; 
+  if (atkColor === "red" && defColor === "green") return 2;
+  if (atkColor === "green" && defColor === "blue") return 2;
+  if (atkColor === "blue" && defColor === "red") return 2;
+  return 1;
+}
+
+function getValidAttackTargets(oppPlayerObj) {
+  let hasSemi = oppPlayerObj.field.some(bug => bug.name.includes("ゼミ") || cardDatabase[getCleanName(bug.name)]?.family === "セミ科");
+  let activeSemiyadoriIndices = [];
+  oppPlayerObj.field.forEach((f, idx) => {
+    if (f.name === "セミヤドリガ（幼虫）" && hasSemi && !f.lostAbility) {
+      activeSemiyadoriIndices.push(idx);
+    }
+  });
+  if (activeSemiyadoriIndices.length > 0) return activeSemiyadoriIndices;
+
+  let hasNonGitai = oppPlayerObj.field.some(f => {
+    let baseData = cardDatabase[f.name];
+    let isGitai = f.gitaiActive || (!f.lostAbility && baseData && baseData.skills && baseData.skills.some(s => s.includes("〈擬態〉")));
+    return !isGitai;
+  });
+
+  return oppPlayerObj.field.map((f, idx) => {
+    let baseData = cardDatabase[f.name];
+    let isGitai = f.gitaiActive || (!f.lostAbility && baseData && baseData.skills && baseData.skills.some(s => s.includes("〈擬態〉")));
+    if (isGitai && hasNonGitai) return -1; 
+    return idx;
+  }).filter(idx => idx !== -1);
+}
+
+function triggerEnterFieldEffects(playerObj, bugObj) {
+  if (bugObj.lostAbility) return;
+  const data = cardDatabase[getCleanName(bugObj.name)];
+  if (!data) return;
+
+  if (data.skills && data.skills.some(s => s.includes("〈好物〉"))) {
+    bugObj.currentHp += getKobutsuBonus(bugObj.name, playerObj);
+  }
+  if (bugObj.name === "セミヤドリガ（幼虫）" && playerObj.field.some(b => b.name.includes("ゼミ") || cardDatabase[getCleanName(b.name)]?.family === "セミ科")) {
+    bugObj.currentHp += 100;
+  }
+  if (bugObj.name.includes("ゼミ") || data.family === "セミ科") {
+    playerObj.field.forEach(f => {
+      if (f.name === "セミヤドリガ（幼虫）" && !f.lostAbility) f.currentHp += 100;
+    });
+  }
+
+  if (getCleanName(bugObj.name) === "テイオウゼミ") {
+    let semiInGrave = playerObj.grave.filter(g => cardDatabase[getCleanName(g)]?.family === "セミ科" || getCleanName(g).includes("ゼミ"));
+    if (semiInGrave.length > 0 && playerObj.field.length < 6) {
+      if (confirm("【テイオウゼミ】〈セミの帝王〉を発動し、捨て札からセミ科の虫を1つ場に出しますか？")) {
+        let sIdx = parseInt(prompt("場に出すセミ科の虫の番号:\n" + semiInGrave.map((g, i) => `${i+1}: ${getDisplayName(g)}`).join('\n'))) - 1;
+        if (!isNaN(sIdx) && semiInGrave[sIdx]) {
+          let chosenSemi = semiInGrave[sIdx];
+          playerObj.grave.splice(playerObj.grave.indexOf(chosenSemi), 1);
+          let extraSemi = { name: chosenSemi, tapped: true, equips: [], currentHp: cardDatabase[getCleanName(chosenSemi)].hp, usedSkills: [], gitaiActive: cardDatabase[getCleanName(chosenSemi)].skills?.some(s => s.includes("〈擬態〉")) };
+          playerObj.field.push(extraSemi);
+          alert(`【${getDisplayName(chosenSemi)}】を捨て札から特殊召喚しました！（このターン攻撃不可）`);
+          triggerEnterFieldEffects(playerObj, extraSemi);
+        }
+      }
+    }
+  }
+
+  if (data.skills && data.skills.some(s => s.includes("〈狂暴化〉"))) {
+    let isDestroyed = false;
+    if (playerObj.mana.length > 0) {
+      let manaList = "【狂暴化】が発動！破壊する自分のエサの番号を選んでください:\n";
+      playerObj.mana.forEach((m, idx) => { 
+        let dName = m.endsWith('_裏') ? "エサ(裏向き)" : getDisplayName(m);
+        manaList += `${idx + 1}: ${dName}\n`; 
+      });
+      let res = prompt(manaList); let targetIdx = parseInt(res) - 1;
+      if (!isNaN(targetIdx) && targetIdx >= 0 && targetIdx < playerObj.mana.length) {
+        const destroyedMana = playerObj.mana.splice(targetIdx, 1)[0]; 
+        let isUra = destroyedMana.endsWith('_裏');
+        let cleanMana = getCleanName(destroyedMana);
+        playerObj.grave.push(cleanMana);
+        alert(`エサ場の【${isUra ? "エサ (裏向き)" : getDisplayName(cleanMana)}】を破壊しました。`);
+        
+        if (!isUra && (cleanMana === "ワタアブラムシ" || cleanMana === "ササコナフキツノアブラムシ")) {
+          for (let k = playerObj.field.length - 1; k >= 0; k--) {
+            let targetBug = playerObj.field[k];
+            if (cardDatabase[targetBug.name]?.skills?.some(s => s.includes("〈好物〉"))) {
+              targetBug.currentHp -= 100;
+              if (targetBug.currentHp <= 0) {
+                alert(`エサが減ったため【${getDisplayName(targetBug.name)}】の体力が0になり破壊されました。`);
+                executeDestroy(playerObj, targetBug, false, playerObj === state.p1 ? 'p2' : 'p1');
+              }
+            }
+          }
+        }
+      } else { isDestroyed = true; }
+    } else {
+      isDestroyed = true;
+      alert(`破壊できるエサがないため、【${getDisplayName(bugObj.name)}】は破壊されました。`);
+    }
+    if (isDestroyed) {
+      const idx = playerObj.field.indexOf(bugObj);
+      if (idx !== -1) { playerObj.field.splice(idx, 1); playerObj.grave.push(bugObj.name); }
+      return; 
+    }
+  }
+
+  if (data.skills && data.skills.some(s => s.includes("〈塩辛〉"))) {
+    let buffedCount = 0;
+    playerObj.field.forEach((f) => {
+      if (f !== bugObj && (f.name.includes("トンボ") || f.name.includes("ヤンマ"))) { 
+        f.atkBoost = (f.atkBoost || 0) + 300; 
+        buffedCount++; 
+      }
+    });
+    if (buffedCount > 0) alert(`【塩辛】が発動！この虫以外のトンボ科・ヤンマ科 ${buffedCount} 体の攻撃力が 300 アップしました！`);
+  }
+}
+
+function executeDestroy(playerObj, bugObj, isBugAttack, oppId) {
+  let idx = playerObj.field.indexOf(bugObj);
+  if (idx === -1) return;
+
+  if (bugObj.equips && bugObj.equips.includes("空蝉の皮鎧")) {
+    bugObj.equips.splice(bugObj.equips.indexOf("空蝉の皮鎧"), 1);
+    playerObj.grave.push("空蝉の皮鎧");
+    bugObj.currentHp = getMaxHp(bugObj, playerObj);
+    alert(`【${getDisplayName(bugObj.name)}】が破壊されるかわりに【空蝉の皮鎧】が身代わりとなり、体力が全回復しました！`);
+    return;
+  }
+
+  let pid = playerObj === state.p1 ? 'p1' : 'p2';
+
+  if (isBugAttack && bugObj.name === "ユウレイヒレアシナナフシ" && !bugObj.lostAbility) {
+    if (playerObj.nawabari.length >= 2) {
+      if (confirm(`【${getDisplayName(bugObj.name)}】が破壊されます。〈霊体〉を発動して代わりに縄張りを2枚引きますか？`)) {
+        alert("〈霊体〉発動！身代わりとして縄張りを2枚引きます。");
+        drawSingleNawabari(pid); drawSingleNawabari(pid);
+        bugObj.currentHp = getMaxHp(bugObj, playerObj);
+        return; 
+      }
+    } else { alert("縄張りが2枚以上ないため、〈霊体〉は発動できず破壊されます。"); }
+  }
+
+  let isZeroSemiRemaining = false;
+  if (bugObj.name.includes("ゼミ") || cardDatabase[getCleanName(bugObj.name)]?.family === "セミ科") {
+    let otherSemi = playerObj.field.filter(b => b !== bugObj && (b.name.includes("ゼミ") || cardDatabase[getCleanName(b.name)]?.family === "セミ科"));
+    if (otherSemi.length === 0) isZeroSemiRemaining = true;
+  }
+
+  let baseData = cardDatabase[bugObj.name];
+  let isHoseki = baseData?.skills?.some(s => s.includes("〈宝石昆虫〉"));
+  if (isBugAttack && isHoseki && !bugObj.lostAbility) {
+    playerObj.field.splice(idx, 1);
+    playerObj.mana.push(bugObj.name);
+    alert(`〈宝石昆虫〉が発動！攻撃によって破壊された【${getDisplayName(bugObj.name)}】はエサ場に置かれました。`);
+    
+    if (bugObj.equips && bugObj.equips.length > 0) {
+      playerObj.grave.push(...bugObj.equips);
+      if (bugObj.equips.includes("白銀蜘蛛の糸")) {
+        let partner = playerObj.field.find(b => b.shiroganeId === bugObj.shiroganeId);
+        if (partner) {
+          alert(`【白銀蜘蛛の糸】が破壊されたため、効果で特殊召喚されていた【${getDisplayName(partner.name)}】も連動して破壊されます。`);
+          executeDestroy(playerObj, partner, false, oppId);
+        }
+      }
+    }
+
+    if (isZeroSemiRemaining) {
+      for (let k = playerObj.field.length - 1; k >= 0; k--) {
+        let targetBug = playerObj.field[k];
+        if (targetBug.name === "セミヤドリガ（幼虫）" && !targetBug.lostAbility) {
+          targetBug.currentHp -= 100;
+          if (targetBug.currentHp <= 0) { executeDestroy(playerObj, targetBug, false, oppId); }
+        }
+      }
+    }
+    
+    takeDamage(pid, false);
+    return;
+  }
+
+  playerObj.field.splice(idx, 1);
+  playerObj.grave.push(bugObj.name);
+  if (bugObj.equips && bugObj.equips.length > 0) {
+    playerObj.grave.push(...bugObj.equips);
+    if (bugObj.equips.includes("白銀蜘蛛の糸")) {
+      let partner = playerObj.field.find(b => b.shiroganeId === bugObj.shiroganeId);
+      if (partner) {
+        alert(`【白銀蜘蛛の糸】が破壊されたため、効果で特殊召喚されていた【${getDisplayName(partner.name)}】も連動して破壊されます。`);
+        executeDestroy(playerObj, partner, false, oppId);
+      }
+    }
+  }
+
+  if (isZeroSemiRemaining) {
+    for (let k = playerObj.field.length - 1; k >= 0; k--) {
+      let targetBug = playerObj.field[k];
+      if (targetBug.name === "セミヤドリガ（幼虫）" && !targetBug.lostAbility) {
+        targetBug.currentHp -= 100;
+        if (targetBug.currentHp <= 0) {
+          alert(`場からセミがいなくなったため【${getDisplayName(targetBug.name)}】の体力が0になり破壊されました。`);
+          executeDestroy(playerObj, targetBug, false, oppId);
+        }
+      }
+    }
+  }
+
+  if (isBugAttack) { takeDamage(pid, false); }
+}
+
+const decks = {
+  semiTaikyu: [
+    "リオック", "リオック", "ゴライアスオオツノハナムグリ", "ゴライアスオオツノハナムグリ", 
+    "テイオウゼミ", "テイオウゼミ", "クロテイオウゼミ", "クロテイオウゼミ", "ロードハウナナフシ", 
+    "虹の架け橋", "虹の架け橋", "叛逆の蛮勇", "叛逆の蛮勇", "蜜蝋の壁", "蜜蝋の壁", 
+    "玉響の蠢き", "玉響の蠢き", "繚乱の足掻き", "繚乱の足掻き", "蟻の収穫"
+  ],
+  baseDeck: [
+    "オオカレエダカマキリ", "オオカレエダカマキリ", "ゴクラクトリバネアゲハ", "ゴクラクトリバネアゲハ",
+    "ユウレイヒレアシナナフシ", "テナガカミキリ", "オオミズアオ", "白銀蜘蛛の糸", "草薙の劫火", 
+    "贄虫の転生", "贄虫の転生", "空蝉の皮鎧", "空蝉の皮鎧", "蜉蝣の閃き", "蜜蝋の壁", 
+    "玉響の蠢き", "玉響の蠢き", "蟻の収穫", "息吹の解放", "息吹の解放"
+  ],
+  ikitaKaseki: [
+    "テイオウムカシヤンマ", "テイオウムカシヤンマ", "ムカシヤンマ", "ムカシヤンマ", "ムカシトンボ", "ムカシトンボ",
+    "テナガカミキリ（旧）", "ロードハウナナフシ", "ヘラクレスオオカブト", "マンディブラリスフタマタクワガタ", "オオシオカラトンボ",
+    "ゴライアスオオツノハナムグリ", "ゴライアスオオツノハナムグリ", "古の蜻蛉切", "古の蜻蛉切",
+    "瀬戸際の虫時雨", "虹の架け橋", "虹の架け橋", "蜉蝣の閃き", "刺蝿の血盟"
+  ],
+  yuchuAburamushi: [
+    "ゴイシシジミ（幼虫）", "ゴイシシジミ（幼虫）", "セミヤドリガ（幼虫）", "セミヤドリガ（幼虫）",
+    "チッチゼミ", "チッチゼミ", "イラガセイボウ", "イラガセイボウ", "ゴイシシジミ", "ゴイシシジミ",
+    "ワタアブラムシ", "ワタアブラムシ", "オオミノガ（幼虫）", "オオミノガ（幼虫）",
+    "ササコナフキツノアブラムシ", "ササコナフキツノアブラムシ", "刺蝿の血盟", "刺蝿の血盟", "小蝿の落とし子", "金色の顎門"
+  ],
+  giantKamikirimushi: [
+    "オオキバウスバカミキリ", "オオキバウスバカミキリ",
+    "タイタンオオウスバカミキリ", "タイタンオオウスバカミキリ",
+    "テナガカミキリ（新）", "テナガカミキリ（新）",
+    "アシナガオオコノハギス", "蜉蝣の閃き",
+    "ホウセキゾウムシ", "ホウセキゾウムシ",
+    "グンジョウオオコブハムシ", "グンジョウオオコブハムシ",
+    "神木の息吹", "神木の息吹",
+    "虹の架け橋", "虹の架け橋",
+    "蜜絶の翠境", "蜜絶の翠境",
+    "天牛の錦顎", "天牛の錦顎"
+  ]
+};
+
+function setupGame() {
+  const p1Selected = document.getElementById('p1-deck-select').value;
+  const p2Selected = document.getElementById('p2-deck-select').value;
+  state.firstPlayer = Math.random() < 0.5 ? 'p1' : 'p2';
+  state.activePlayer = state.firstPlayer;
+  state.turnCount = 1; state.phase = 'set'; state.hasSetManaThisTurn = false;
+  
+  state.p1 = { deck: [...decks[p1Selected]].sort(() => Math.random() - 0.5), hand: [], field: [], mana: [], grave: [], nawabari: [], cost: 0, gekkouActive: false };
+  state.p2 = { deck: [...decks[p2Selected]].sort(() => Math.random() - 0.5), hand: [], field: [], mana: [], grave: [], nawabari: [], cost: 0, gekkouActive: false };
+  
+  for (let i = 0; i < 6; i++) {
+    if (state.p1.deck.length > 0) state.p1.nawabari.push(state.p1.deck.pop());
+    if (state.p2.deck.length > 0) state.p2.nawabari.push(state.p2.deck.pop());
+  }
+  for (let i = 0; i < 4; i++) {
+    if (state.p1.deck.length > 0) state.p1.hand.push(state.p1.deck.pop());
+    if (state.p2.deck.length > 0) state.p2.hand.push(state.p2.deck.pop());
+  }
+  alert(`ゲーム開始！先攻は【${state.firstPlayer === 'p1' ? "プレイヤー1" : "プレイヤー2"}】です。`);
+  render();
+}
+
+function nextPhase() {
+  if (state.phase === 'setup') return alert("ゲーム開始ボタンを押してください。");
+  const p = state[state.activePlayer];
+  const oppId = state.activePlayer === 'p1' ? 'p2' : 'p1';
+  
+  if (state.phase === 'set') {
+    state.phase = 'main'; p.cost = p.mana.length;
+  } else if (state.phase === 'main') {
+    p.cost = 0; state.hasSetManaThisTurn = false; p.gekkouActive = false; 
+    
+    state[oppId].field.forEach(bug => {
+      if (bug.minoActive) {
+        bug.minoActive = false;
+        let mHp = getMaxHp(bug, state[oppId]);
+        if (bug.currentHp > mHp) bug.currentHp = mHp;
+      }
+    });
+
+    for (let j = p.field.length - 1; j >= 0; j--) {
+      let bug = p.field[j];
+      bug.tapped = false; bug.atkBoost = 0;
+      if (bug.shigureDestroy) {
+        let hadUtusemi = bug.equips && bug.equips.includes("空蝉の皮鎧");
+        executeDestroy(p, bug, false, oppId);
+        if (hadUtusemi) bug.shigureDestroy = false;
+        else alert(`ターン終了時効果により【${getDisplayName(bug.name)}】が破壊されました。`);
+      }
+      if (p.field.includes(bug)) {
+        bug.currentHp = getMaxHp(bug, p);
+      }
+    }
+
+    state[oppId].gekkouActive = false; 
+    state.activePlayer = oppId;
+    if (state.activePlayer === state.firstPlayer) state.turnCount++;
+    
+    state.phase = 'draw'; executeDrawPhase();
+    if (state.phase !== 'setup') state.phase = 'set';
+  }
+  render();
+}
+
+function executeDrawPhase() {
+  const p = state[state.activePlayer];
+  if (p.deck.length === 0) {
+    alert(`山札切れ！縄張りの多い方の勝利です。(P1:${state.p1.nawabari.length}枚, P2:${state.p2.nawabari.length}枚)`);
+    state.phase = 'setup'; return;
+  }
+  p.hand.push(p.deck.pop());
+}
+
+function processDrawnNawabari(playerId, drawnCard) {
+  const defender = state[playerId];
+  let cleanDrawn = drawnCard.replace('_表', '');
+  if (cleanDrawn === "オオミズアオ") {
+    if (confirm("縄張りから【オオミズアオ】を引きました！\n〈月光〉を発動して捨て札に置き、ターン終了時まで縄張りを引きを無効化しますか？")) {
+      defender.grave.push("オオミズアオ"); defender.gekkouActive = true; return;
+    }
+  }
+  const data = cardDatabase[cleanDrawn];
+  if (data?.skills?.some(s => s.includes("〈とびだす〉"))) {
+    let fieldHasTobidasu = defender.field.some(bug => cardDatabase[bug.name]?.skills?.some(s => s.includes("〈とびだす〉")));
+    if (!fieldHasTobidasu && confirm(`縄張りから【${getDisplayName(cleanDrawn)}】を引きました！〈とびだす〉で場に出しますか？`)) {
+      let newBug = { name: cleanDrawn, tapped: false, equips: [], currentHp: data.hp, usedSkills: [], gitaiActive: data.skills.some(s => s.includes("〈擬態〉")) };
+      defender.field.push(newBug); triggerEnterFieldEffects(defender, newBug); return; 
+    }
+  }
+  alert(`縄張りを1枚引き、手札に加えました。`);
+  defender.hand.push(cleanDrawn);
+}
+
+function drawSingleNawabari(playerId) {
+  const player = state[playerId];
+  if (player.nawabari.length === 0) return false;
+  let drawnCard = null;
+  let mIdx = player.nawabari.indexOf("蜜蝋の壁_表");
+  if (mIdx === -1) mIdx = player.nawabari.indexOf("蜜蝋 of 壁_表");
+  
+  if (mIdx !== -1) {
+    let hasNormal = player.nawabari.some(c => c !== "蜜蝋の壁_表" && c !== "蜜蝋 of 壁_表");
+    if (hasNormal && confirm("縄張りに表向きの【蜜蝋の壁】があります。通常の縄張りの代わりにこれを引きますか？")) {
+      drawnCard = player.nawabari.splice(mIdx, 1)[0];
+    } else {
+      if (!hasNormal) drawnCard = player.nawabari.splice(mIdx, 1)[0];
+      else {
+        for (let i = player.nawabari.length - 1; i >= 0; i--) {
+          if (player.nawabari[i] !== "蜜蝋の壁_表" && player.nawabari[i] !== "蜜蝋 of 壁_表") { drawnCard = player.nawabari.splice(i, 1)[0]; break; }
+        }
+      }
+    }
+  } else { drawnCard = player.nawabari.pop(); }
+
+  if (drawnCard === "蜜蝋の壁_表" || drawnCard === "蜜蝋 of 壁_表") {
+    alert("縄張りから【蜜蝋の壁】が引かれました！捨て札に置かれます。");
+    player.grave.push("蜜蝋の壁"); return true;
+  }
+  processDrawnNawabari(playerId, drawnCard); return true;
+}
+
+function takeDamage(playerId, isDirectAttack = false) {
+  const defender = state[playerId];
+  if (defender.nawabari.length === 0) {
+    if (isDirectAttack) { alert(`【ゲーム終了】直接攻撃成功！攻撃側の勝利です！！`); state.phase = 'setup'; }
+    return;
+  }
+  if (defender.gekkouActive) { alert(`【月光】が有効なため、縄張りを引きません！`); return; }
+  drawSingleNawabari(playerId);
+}
+
+function handleJuekiKyuushuu(p, opp) {
+  // ① 1回目の対象：相手のエサ場にある「虫」のみに限定
+  let omoteBugs = opp.mana.filter(m => !m.endsWith('_裏') && cardDatabase[getCleanName(m)]?.type === "蟲");
+  
+  if (omoteBugs.length > 0) {
+      if (confirm("【樹液吸収】の効果！この技により相手が縄張りを引いたため、相手のエサ場にある虫を1つ選び裏返せます。裏返しますか？")) {
+          let mIdx1 = parseInt(prompt("裏返すエサ（虫）の番号:\n" + omoteBugs.map((m, i) => `${i+1}: ${getDisplayName(m)}`).join('\n'))) - 1;
+          if (!isNaN(mIdx1) && omoteBugs[mIdx1]) {
+              let chosenMana = omoteBugs[mIdx1];
+              let isBlue = cardDatabase[getCleanName(chosenMana)]?.color === "blue";
+              
+              // 選んだ虫を裏返す
+              opp.mana[opp.mana.indexOf(chosenMana)] = chosenMana + "_裏";
+              alert(`相手のエサ場にある【${getDisplayName(chosenMana)}】を裏返しました。`);
+
+              // ② 選んだ虫が青だった場合
+              if (isBlue) {
+                  // 2回目の対象：青の「エサ」（術や強化カードも含む）
+                  let omoteBlueMana = opp.mana.filter(m => !m.endsWith('_裏') && cardDatabase[getCleanName(m)]?.color === "blue");
+                  
+                  if (omoteBlueMana.length > 0 && confirm("裏返した虫が青属性でした。もう1つの青のエサを選び裏返しますか？")) {
+                      let mIdx2 = parseInt(prompt("裏返す2つ目の青のエサの番号:\n" + omoteBlueMana.map((m, i) => `${i+1}: ${getDisplayName(m)}`).join('\n'))) - 1;
+                      if (!isNaN(mIdx2) && omoteBlueMana[mIdx2]) {
+                          let chosenBlue = omoteBlueMana[mIdx2];
+                          opp.mana[opp.mana.indexOf(chosenBlue)] = chosenBlue + "_裏";
+                          alert(`追加で相手の青のエサ【${getDisplayName(chosenBlue)}】を裏返しました。`);
+                      }
+                  }
+              }
+          }
+      }
+  }
+}
+
+function createCardUI(name, isNawabari = false, onCardClick = null, playerObj = null) {
+  let isUra = typeof name === 'string' && name.endsWith('_裏');
+  let actualName = getCleanName(name);
+
+  const div = document.createElement('div');
+  if (isNawabari) { div.className = 'card nawabari-card'; div.innerText = "縄張り"; return div; }
+  
+  if (isUra) {
+    div.className = `card c-void`;
+    div.innerHTML = `<span class="type-badge">エサ</span><div style="margin: 5px 0; color:#4a5568; font-weight:bold;">エサ<br>(裏向き)</div>`;
+    if (onCardClick) div.onclick = onCardClick;
+    return div;
+  }
+
+  const data = cardDatabase[actualName] || { cost: 0, type: "術", color: "void", hp: 0 };
+  div.className = `card c-${data.color}`;
+  const hpHtml = data.hp ? `<span class="hp-badge">体:${data.hp}</span>` : '';
+  div.innerHTML = `<span class="cost-badge">${getCardCost(actualName, playerObj)}</span>${hpHtml}<div style="margin: 5px 0;">${getDisplayName(actualName)}</div><span class="type-badge">${data.type}</span>`;
+  if (onCardClick) div.onclick = onCardClick;
+  return div;
+}
+
+function render() {
+  const isP1First = state.firstPlayer === 'p1';
+  document.getElementById('p1-label').innerText = `プレイヤー1 (${isP1First ? '先攻' : '後攻'})`;
+  document.getElementById('p2-label').innerText = `プレイヤー2 (${isP1First ? '後攻' : '先攻'})`;
+  document.getElementById('turn-display').innerText = `ターン: ${state.turnCount} | 手番: ${state.activePlayer === 'p1' ? 'プレイヤー1' : 'プレイヤー2'}`;
+  
+  ['draw', 'set', 'main'].forEach(ph => { document.getElementById(`step-${ph}`).className = (state.phase === ph) ? 'phase-step active' : 'phase-step'; });
+  const phaseBtn = document.getElementById('phase-btn');
+  if (state.phase === 'setup') phaseBtn.innerText = "ゲーム開始待ち";
+  else if (state.phase === 'set') phaseBtn.innerText = "エサを置かずにメインへ ▶";
+  else if (state.phase === 'main') phaseBtn.innerText = "ターン終了 ▶";
+  
+  document.getElementById('p1-area').className = 'player-area' + (state.activePlayer === 'p1' ? ' active-turn' : '');
+  document.getElementById('p2-area').className = 'player-area' + (state.activePlayer === 'p2' ? ' active-turn' : '');
+  document.getElementById('p1-status').innerText = `エサ: ${state.p1.mana.length}枚 | 使用コスト: ${state.p1.cost}`;
+  document.getElementById('p2-status').innerText = `エサ: ${state.p2.mana.length}枚 | 使用コスト: ${state.p2.cost}`;
+  
+  ['p1', 'p2'].forEach(pid => {
+    const p = state[pid]; const oppId = pid === 'p1' ? 'p2' : 'p1';
+    
+    document.getElementById(`${pid}-deck`).innerHTML = '';
+    if (p.deck.length > 0) {
+      const dCard = document.createElement('div'); dCard.className = 'card deck-card'; dCard.innerText = `山札\n(${p.deck.length}枚)`; document.getElementById(`${pid}-deck`).appendChild(dCard);
+    }
+    
+    document.getElementById(`${pid}-grave`).innerHTML = '';
+    p.grave.forEach(c => document.getElementById(`${pid}-grave`).appendChild(createCardUI(c, false, null, p)));
+    document.getElementById(`${pid}-mana`).innerHTML = '';
+    p.mana.forEach(c => document.getElementById(`${pid}-mana`).appendChild(createCardUI(c, false, null, p)));
+    
+    const nawabariZone = document.getElementById(`${pid}-nawabari`); nawabariZone.innerHTML = '';
+    p.nawabari.forEach(c => {
+      if (c === "蜜蝋の壁_表" || c === "蜜蝋 of 壁_表") nawabariZone.appendChild(createCardUI("蜜蝋の壁", false, null, p));
+      else nawabariZone.appendChild(createCardUI(c, true, null, p));
+    });
+    
+    const fieldZone = document.getElementById(`${pid}-field`); fieldZone.innerHTML = '';
+    p.field.forEach((cardObj, i) => {
+      const data = cardDatabase[getCleanName(cardObj.name)] || { type: "蟲", color: "void", skills: [], hp: 0 };
+      const div = document.createElement('div'); div.className = `card c-${data.color}` + (cardObj.tapped ? ' tapped-card' : '');
+      let equipHtml = cardObj.equips.length > 0 ? `<div class="equip-list">装備: ${cardObj.equips.map(getDisplayName).join(', ')}</div>` : '';
+      let lostHtml = cardObj.lostAbility ? '<br><span style="color:#64748b;font-size:9px;">[能力喪失]</span>' : '';
+      
+      let baseData = cardDatabase[getCleanName(cardObj.name)];
+      let isGitai = cardObj.gitaiActive || (!cardObj.lostAbility && baseData && baseData.skills && baseData.skills.some(s => s.includes("〈擬態〉")));
+      let gitaiHtml = isGitai ? '<br><span style="color:#16a34a;font-size:9px;">[擬態中]</span>' : '';
+      let shigureHtml = cardObj.shigureDestroy ? '<br><span style="color:#b91c1c;font-size:9px;">[ターン終了時破壊]</span>' : '';
+      let minoHtml = cardObj.minoActive ? '<br><span style="color:#2563eb;font-size:9px;">[ミノにこもる中]</span>' : '';
+      
+      let maxHp = getMaxHp(cardObj, p);
+      div.innerHTML = `<span class="cost-badge">${getCardCost(cardObj.name, p)}</span><span class="hp-badge">体:${cardObj.currentHp}/${maxHp}</span><div style="margin: 5px 0;">${getDisplayName(cardObj.name)}${cardObj.tapped ? '<br><span style="color:red;font-size:9px;">[攻撃済]</span>' : ''}${gitaiHtml}${lostHtml}${shigureHtml}${minoHtml}</div><span class="type-badge">${data.type}</span>${equipHtml}`;
+      
+      div.onclick = () => {
+        if (state.activePlayer !== pid || state.phase !== 'main' || cardObj.tapped) return alert("操作できないか、攻撃済みです。");
+        let availableSkills = (data.skills || []).filter(s => !s.startsWith("〈"));
+        
+        let skillList = "技を選んでください:\n";
+        availableSkills.forEach((s, idx) => skillList += `${idx + 1}: ${s}\n`);
+        const skillRes = prompt(skillList); if (!skillRes) return;
+        const selectedSkill = availableSkills[parseInt(skillRes) - 1]; if (!selectedSkill) return;
+        
+        const opp = state[oppId];
+        let selectableIndices = getValidAttackTargets(opp);
+        
+        if (selectedSkill.includes("テナガ攻撃") || selectedSkill.includes("テナガ無双")) {
+          if (selectableIndices.length < 2) return alert("【発動不可】対象にできる相手の蟲が足りません。");
+          if (selectedSkill.includes("テナガ無双")) {
+            let colorCounts = {}; selectableIndices.forEach(idx => { let c = cardDatabase[opp.field[idx].name].color; colorCounts[c] = (colorCounts[c] || 0) + 1; });
+            if (!Object.values(colorCounts).some(count => count >= 2)) return alert("【発動不可】同じ色の蟲のペアがいません。");
+          }
+        }
+
+        if (selectedSkill.includes("合唱")) {
+            let semiCount = p.field.filter(b => cardDatabase[b.name]?.family === "セミ科" || b.name.includes("ゼミ")).length;
+            if (semiCount < 2) return alert("【発動不可】自分の場にセミ科の虫が2つ以上いません。");
+        }
+        
+        cardObj.tapped = true;
+        let baseAtk = parseInt(selectedSkill.match(/\((\d+)\)/)?.[1] || "0");
+        
+        if (cardObj.equips.includes("古の蜻蛉切")) baseAtk += 300;
+        if (cardObj.atkBoost) baseAtk += cardObj.atkBoost;
+        baseAtk += getKobutsuBonus(cardObj.name, p);
+        if (cardObj.name === "セミヤドリガ（幼虫）" && !cardObj.lostAbility && p.field.some(b => b.name.includes("ゼミ") || cardDatabase[getCleanName(b.name)]?.family === "セミ科")) baseAtk += 100;
+
+        if (!cardObj.lostAbility) {
+          if (cardDatabase[cardObj.name].skills?.some(s => s.includes("〈巨大甲虫〉")) && p.mana.length >= 8) baseAtk += 1000;
+          if (cardDatabase[cardObj.name].skills?.some(s => s.includes("〈巨大昆虫〉")) && p.mana.length >= 8) baseAtk += 500;
+        }
+        if (cardObj.equips.includes("蜜絶の翠境")) {
+          baseAtk += (p.mana.length >= 6) ? 800 : 400;
+        }
+        if (cardObj.equips.includes("天牛の錦顎")) {
+          baseAtk += 300;
+        }
+
+        let drewNawabari = false;
+
+        if (selectedSkill.includes("テナガ攻撃") || selectedSkill.includes("テナガ無双")) {
+          let requireSameColor = selectedSkill.includes("テナガ無双");
+          let t1 = parseInt(prompt("1体目の対象の番号:\n" + selectableIndices.map(idx => `${idx+1}: ${getDisplayName(opp.field[idx].name)}`).join('\n'))) - 1;
+          if (isNaN(t1) || !selectableIndices.includes(t1)) { cardObj.tapped = false; return alert("キャンセル"); }
+          
+          let color1 = cardDatabase[opp.field[t1].name].color;
+          let validT2 = selectableIndices.filter(idx => idx !== t1 && (!requireSameColor || cardDatabase[opp.field[idx].name].color === color1));
+          let t2 = parseInt(prompt("2体目の対象の番号:\n" + validT2.map(idx => `${idx+1}: ${getDisplayName(opp.field[idx].name)}`).join('\n'))) - 1;
+          if (isNaN(t2) || !validT2.includes(t2)) { cardObj.tapped = false; return alert("キャンセル"); }
+
+          let b1 = opp.field[t1]; let b2 = opp.field[t2];
+          
+          let dmgBonus = (selectedSkill.includes("テナガ無双") && getCleanName(b1.name) === getCleanName(b2.name)) ? 500 : 0;
+          let dmg1 = (baseAtk + dmgBonus) * getColorMultiplier(data.color, cardDatabase[b1.name].color, b1.equips);
+          let dmg2 = (baseAtk + dmgBonus) * getColorMultiplier(data.color, cardDatabase[b2.name].color, b2.equips);
+          
+          b1.currentHp -= dmg1; b2.currentHp -= dmg2;
+          alert(`${getDisplayName(b1.name)}に${dmg1}点、${getDisplayName(b2.name)}に${dmg2}点ダメージ！${dmgBonus > 0 ? '（同名ボーナス+500）' : ''}`);
+          
+          if (b1.currentHp <= 0) {
+              if (!opp.gekkouActive && opp.nawabari.length > 0) drewNawabari = true;
+              executeDestroy(opp, b1, true, pid);
+          }
+          if (b2.currentHp <= 0) {
+              if (!opp.gekkouActive && opp.nawabari.length > 0) drewNawabari = true;
+              executeDestroy(opp, b2, true, pid);
+          }
+        } else {
+          if (opp.field.length === 0 || selectableIndices.length === 0) {
+            alert("直接攻撃！縄張りを1枚引かせます。"); 
+            if (!opp.gekkouActive && opp.nawabari.length > 0) drewNawabari = true;
+            takeDamage(oppId, true);
+          } else {
+            let tIdx = parseInt(prompt("攻撃対象を選択:\n" + selectableIndices.map(idx => `${idx+1}: ${getDisplayName(opp.field[idx].name)}`).join('\n'))) - 1;
+            if (isNaN(tIdx) || !selectableIndices.includes(tIdx)) { cardObj.tapped = false; return; }
+            let targetBug = opp.field[tIdx];
+            if (selectedSkill.includes("ヘラクレス投げ")) {
+              opp.field.splice(tIdx, 1); opp.hand.push(targetBug.name);
+              if (targetBug.equips.length > 0) {
+                opp.grave.push(...targetBug.equips);
+                if (targetBug.equips.includes("白銀蜘蛛の糸")) {
+                  let partner = opp.field.find(b => b.shiroganeId === targetBug.shiroganeId);
+                  if (partner) { executeDestroy(opp, partner, false, pid); }
+                }
+              }
+              alert(`${getDisplayName(targetBug.name)}を手札に戻しました！`);
+            } else {
+              let finalDmg = baseAtk * getColorMultiplier(data.color, cardDatabase[targetBug.name].color, targetBug.equips);
+              if (finalDmg > 0 || selectedSkill.includes("ミノにこもる")) {
+                targetBug.currentHp -= finalDmg; alert(`${getDisplayName(targetBug.name)}に ${finalDmg} ダメージ！`);
+                if (targetBug.currentHp <= 0) {
+                    if (!opp.gekkouActive && opp.nawabari.length > 0) drewNawabari = true;
+                    executeDestroy(opp, targetBug, true, pid);
+                }
+              } else {
+                alert(`${getDisplayName(targetBug.name)}に攻撃しましたが、ダメージは0です！`);
+              }
+            }
+          }
+        }
+
+        if (selectedSkill.includes("樹液吸収") && drewNawabari) {
+            handleJuekiKyuushuu(p, opp);
+        }
+        
+        if (selectedSkill.includes("ミノにこもる") && p.field.includes(cardObj)) {
+          cardObj.minoActive = true;
+          cardObj.currentHp += 200;
+          alert(`【オオミノガ（幼虫）】はミノにこもった！体力が200増えました。`);
+        }
+        
+        if (selectedSkill.includes("ドラゴン螳螂拳") && p.field.includes(cardObj)) {
+          let playables = p.hand.map((h, idx) => {
+             let cName = getCleanName(h);
+             return (cName === "空蝉の皮鎧" || cName === "贄虫の転生") ? idx : -1;
+          }).filter(idx => idx !== -1);
+          
+          if (playables.length > 0 && confirm("【ドラゴン螳螂拳】手札の【空蝉の皮鎧】または【贄虫の転生】をノーコストで使用しますか？")) {
+             let sel = parseInt(prompt("使用するカード番号:\n" + playables.map((hIdx, i) => `${i+1}: ${getDisplayName(p.hand[hIdx])}`).join('\n'))) - 1;
+             if (!isNaN(sel) && sel >= 0 && sel < playables.length) handleCastSpell(playables[sel], p, pid, oppId, cardObj);
+          } else if (playables.length === 0) {
+             alert("手札に使用できる【空蝉の皮鎧】または【贄虫の転生】がありません。");
+          }
+        }
+        render();
+      };
+      fieldZone.appendChild(div);
+    });
+    
+    const handZone = document.getElementById(`${pid}-hand`); handZone.innerHTML = '';
+    p.hand.forEach((c, i) => {
+      if (state.activePlayer !== pid) {
+        const hidden = document.createElement('div'); hidden.className = 'card nawabari-card'; hidden.innerText = "手札\n(裏)"; handZone.appendChild(hidden); return;
+      }
+      handZone.appendChild(createCardUI(c, false, () => {
+        let currentCost = getCardCost(c, p);
+        if (state.phase === 'set') {
+          if (state.hasSetManaThisTurn) return alert("エサは1ターンに1枚です。");
+          if (confirm(`【${getDisplayName(c)}】をエサ場にしますか？`)) { 
+            p.mana.push(p.hand.splice(i, 1)[0]); 
+            if (c === "ワタアブラムシ" || c === "ササコナフキツノアブラムシ") {
+              p.field.forEach(bug => { if (cardDatabase[bug.name]?.skills?.some(s => s.includes("〈好物〉"))) bug.currentHp += 100; });
+            }
+            state.hasSetManaThisTurn = true; nextPhase(); 
+          }
+        } else if (state.phase === 'main') {
+          if (c === "イラガセイボウ" && p.field.some(bug => bug.name.includes("（幼虫）"))) {
+            if (confirm("〈食い破る〉を発動して、自分の場の（幼虫）の虫を破壊してノーコストで場に出しますか？")) {
+              let yuchuIndices = p.field.map((bug, idx) => bug.name.includes("（幼虫）") ? idx : -1).filter(idx => idx !== -1);
+              let sel = prompt("破壊する（幼虫）の番号を選んでください:\n" + yuchuIndices.map(idx => `${idx+1}: ${getDisplayName(p.field[idx].name)}`).join('\n'));
+              let targetIdx = yuchuIndices[parseInt(sel) - 1];
+              if (isNaN(targetIdx) || targetIdx === undefined) {
+                alert("キャンセルしました。通常のコストを支払って召喚を試みます。");
+              } else {
+                let targetYuchu = p.field[targetIdx];
+                p.hand.splice(i, 1);
+                executeDestroy(p, targetYuchu, false, oppId);
+                let newBug = { name: "イラガセイボウ", tapped: false, equips: [], currentHp: cardDatabase["イラガセイボウ"].hp, usedSkills: [], gitaiActive: false };
+                p.field.push(newBug);
+                alert("【イラガセイボウ】が〈食い破る〉の効果で登場しました！");
+                triggerEnterFieldEffects(p, newBug);
+                render(); return;
+              }
+            }
+          }
+          
+          let isBloodOathAlternative = (c === "刺蝿の血盟" && p.nawabari.length >= 2);
+          let isRiockAlternative = (c === "リオック" && p.field.length >= 2);
+          if (p.cost < currentCost && !isBloodOathAlternative && !isRiockAlternative) return alert("コストが足りません！");
+          
+          handleCastSpell(i, p, pid, oppId);
+        }
+        render();
+      }, p));
+    });
+  });
+}
+
+function handleCastSpell(handIdx, p, pid, oppId, dragonKamakiriObj = null) {
+  let c = p.hand[handIdx]; let data = cardDatabase[c];
+  let currentCost = dragonKamakiriObj ? 0 : getCardCost(c, p);
+  
+  if (data.type === '蟲') {
+    let costPaidWithSkill = false;
+    if (c === "リオック" && p.field.length >= 2) {
+        if (confirm("〈エサにする〉を発動し、コストを支払う代わりに自分の場の虫を2つ破壊して場に出しますか？")) {
+            let options = p.field.map((f, i) => `${i+1}: ${getDisplayName(f.name)}`);
+            let idx1 = parseInt(prompt("破壊する1体目の虫の番号:\n" + options.join('\n'))) - 1;
+            if (!isNaN(idx1) && p.field[idx1]) {
+                let b1 = p.field[idx1];
+                let options2 = p.field.map((f, i) => f !== b1 ? `${i+1}: ${getDisplayName(f.name)}` : null).filter(Boolean);
+                let idx2 = parseInt(prompt("破壊する2体目の虫の番号:\n" + options2.join('\n'))) - 1;
+                if (!isNaN(idx2) && p.field[idx2] && idx1 !== idx2) {
+                    let b2 = p.field[idx2];
+                    executeDestroy(p, b1, false, oppId);
+                    executeDestroy(p, b2, false, oppId);
+                    costPaidWithSkill = true;
+                }
+            }
+        }
+    }
+
+    if (!costPaidWithSkill) {
+        if (p.cost < currentCost) return alert("コストが足りません！");
+        p.cost -= currentCost;
+    }
+
+    p.hand.splice(handIdx, 1);
+    let newBug = { name: c, tapped: false, equips: [], currentHp: data.hp, usedSkills: [], gitaiActive: data.skills.some(s => s.includes("〈擬態〉")) };
+    p.field.push(newBug); alert(`【${getDisplayName(c)}】を召喚しました。`);
+    
+    if (getCleanName(c) === "ゴクラクトリバネアゲハ" && !costPaidWithSkill) {
+      if (p.grave.includes("ゴクラクトリバネアゲハ") && p.field.length < 6) {
+        if (confirm("〈極楽還り〉を発動！捨て札のゴクラクトリバネアゲハを特殊召喚しますか？")) {
+          p.grave.splice(p.grave.indexOf("ゴクラクトリバネアゲハ"), 1);
+          let extraGokuraku = { name: "ゴクラクトリバネアゲハ", tapped: false, equips: [], currentHp: cardDatabase["ゴクラクトリバネアゲハ"].hp, usedSkills: [], gitaiActive: false };
+          p.field.push(extraGokuraku); 
+          alert("【ゴクラクトリバネアゲハ】を捨て札から特殊召喚しました！");
+          triggerEnterFieldEffects(p, extraGokuraku);
+        }
+      }
+    }
+    
+    triggerEnterFieldEffects(p, newBug);
+  } 
+  else if (data.type === '強化') {
+    if (c === "白銀蜘蛛の糸") {
+      let graveBugs = p.grave.filter(g => cardDatabase[g] && cardDatabase[g].type === "蟲");
+      if (graveBugs.length < 2) return alert("捨て札に蟲が2枚以上いないため発動できません。");
+      let idx1 = parseInt(prompt("1体目の蟲を選択:\n" + graveBugs.map((g, idx) => `${idx+1}: ${getDisplayName(g)}`).join('\n'))) - 1;
+      if (isNaN(idx1) || !graveBugs[idx1]) return;
+      let bug1 = graveBugs[idx1]; p.grave.splice(p.grave.indexOf(bug1), 1);
+      let remainGrave = p.grave.filter(g => cardDatabase[g] && cardDatabase[g].type === "蟲");
+      let idx2 = parseInt(prompt("2体目の蟲を選択:\n" + remainGrave.map((g, idx) => `${idx+1}: ${getDisplayName(g)}`).join('\n'))) - 1;
+      if (isNaN(idx2) || !remainGrave[idx2]) { p.grave.push(bug1); return; }
+      let bug2 = remainGrave[idx2]; p.grave.splice(p.grave.indexOf(bug2), 1);
+      
+      p.cost -= currentCost; p.hand.splice(handIdx, 1); let sid = Date.now();
+      let b1 = { name: bug1, tapped: false, equips: [], currentHp: cardDatabase[bug1].hp, usedSkills: [], lostAbility: true, shiroganeId: sid, gitaiActive: false };
+      let b2 = { name: bug2, tapped: false, equips: [], currentHp: cardDatabase[bug2].hp, usedSkills: [], lostAbility: true, shiroganeId: sid, gitaiActive: false };
+      if (confirm(`【白銀蜘蛛の糸】をどちらに装備しますか？\nOK: ${getDisplayName(bug1)}\nキャンセル: ${getDisplayName(bug2)}`)) b1.equips.push("白銀蜘蛛の糸");
+      else b2.equips.push("白銀蜘蛛の糸");
+      p.field.push(b1, b2); alert("2体を能力喪失（＜＞の技の効果を失った）状態で特殊召喚しました！");
+      return; 
+    }
+
+    let selectable = p.field.map((b, idx) => {
+      if (c === "古の蜻蛉切" && !(b.name.includes("トンボ") || b.name.includes("ヤンマ"))) return -1;
+      if (c === "蜜絶の翠境" && cardDatabase[b.name].color !== "green") return -1;
+      if (c === "天牛の錦顎" && cardDatabase[b.name].family !== "カミキリムシ科") return -1;
+      return idx;
+    }).filter(idx => idx !== -1);
+
+    if (selectable.length === 0) return alert("装備できる対象がいません。");
+    
+    let targetBugIdx;
+    if (dragonKamakiriObj) {
+      targetBugIdx = p.field.indexOf(dragonKamakiriObj);
+      if (targetBugIdx === -1) return alert("対象のオオカレエダカマキリが場にいません。");
+      alert(`【ドラゴン螳螂拳】の効果により、自身（${getDisplayName(dragonKamakiriObj.name)}）を対象にします！`);
+    } else {
+      targetBugIdx = parseInt(prompt("装備する蟲を選択:\n" + selectable.map(idx => `${idx+1}: ${getDisplayName(p.field[idx].name)}`).join('\n'))) - 1;
+      if (isNaN(targetBugIdx) || !selectable.includes(targetBugIdx)) return alert("キャンセルしました");
+    }
+    
+    p.cost -= currentCost; p.hand.splice(handIdx, 1);
+    let targetBug = p.field[targetBugIdx]; targetBug.equips.push(c);
+    
+    if (c === "古の蜻蛉切") { alert("古の蜻蛉切によりステータス+300！"); }
+    else { alert(`【${getDisplayName(targetBug.name)}】に【${getDisplayName(c)}】を装備しました。`); }
+  } 
+  else { 
+    if (c === "蜜蝋の壁" || c === "蜜蝋 of 壁") {
+      p.cost -= currentCost; p.hand.splice(handIdx, 1); p.nawabari.push("蜜蝋の壁_表"); alert("【蜜蝋の壁】を縄張りに表向きで追加しました！");
+    } 
+    else if (c === "神木の息吹") {
+      p.cost -= currentCost; p.hand.splice(handIdx, 1);
+      p.mana.push(c);
+      p.cost += 6;
+      alert("【神木の息吹】をエサ場に置き、コストを6発生させました！");
+      
+      let selectableGrave = p.grave;
+      if (selectableGrave.length > 0) {
+        if (confirm("捨て札からカードを1枚選び、裏向きでエサ場に置きますか？")) {
+          let sel = parseInt(prompt("裏向きで置くカードの番号:\n" + selectableGrave.map((g, i) => `${i+1}: ${getDisplayName(g)}`).join('\n'))) - 1;
+          if (!isNaN(sel) && selectableGrave[sel]) {
+            let chosen = selectableGrave[sel];
+            p.grave.splice(sel, 1);
+            p.mana.push(chosen + "_裏");
+            alert(`捨て札から【${getDisplayName(chosen)}】を裏向きでエサ場に置きました。\n（※このターン、追加された裏向きのエサからはコストは発生しません）`);
+          }
+        }
+      }
+    }
+    else if (c === "草薙の劫火" || c === "草薙 of 劫火") {
+      if (!confirm("お互いの全蟲を破壊しターン終了します。よろしいですか？")) return;
+      p.cost -= currentCost; p.hand.splice(handIdx, 1);
+      for (let j = p.field.length - 1; j >= 0; j--) executeDestroy(p, p.field[j], false, oppId);
+      for (let j = state[oppId].field.length - 1; j >= 0; j--) executeDestroy(state[oppId], state[oppId].field[j], false, pid);
+      state.phase = 'main'; nextPhase();
+    } 
+    else if (c === "息吹の解放") {
+      let opp = state[oppId]; let validTargets = getValidAttackTargets(opp).map(idx => opp.field[idx]);
+      if (validTargets.length === 0) return alert("対象にできる相手の蟲がいません。");
+      let tIdx = parseInt(prompt("息吹の解放の対象を選択:\n" + validTargets.map((f, i) => `${i+1}: ${getDisplayName(f.name)}`).join('\n'))) - 1;
+      if (isNaN(tIdx) || tIdx < 0 || tIdx >= validTargets.length) return alert("キャンセル");
+      let pay = parseInt(prompt(`支払うコストを入力してください (0 ～ ${p.cost}):`));
+      if (isNaN(pay) || pay < 0 || pay > p.cost) return alert("無効なコスト量です。");
+      p.cost -= pay; p.hand.splice(handIdx, 1); p.grave.push(c);
+      let targetBug = validTargets[tIdx]; let dmg = pay * 300; targetBug.currentHp -= dmg;
+      alert(`【息吹の解放】で ${dmg} ダメージ与えました！`);
+      if (targetBug.currentHp <= 0) executeDestroy(opp, targetBug, false, pid);
+    }
+    else if (c === "贄虫の転生") {
+      if (p.field.length === 0) return alert("自分の蟲がいないため発動できません。");
+      
+      let sacrificed;
+      if (dragonKamakiriObj) {
+        let tIdx = p.field.indexOf(dragonKamakiriObj);
+        if (tIdx === -1) return alert("対象のオオカレエダカマキリが場にいません。");
+        sacrificed = p.field.splice(tIdx, 1)[0];
+        alert(`【ドラゴン螳螂拳】の効果により、自身（${getDisplayName(sacrificed.name)}）を贄虫の転生の対象にして山札の下へ送ります！`);
+      } else {
+        let tIdx = parseInt(prompt("山札の下に送る自分の蟲を選択:\n" + p.field.map((f, i) => `${i+1}: ${getDisplayName(f.name)}`).join('\n'))) - 1;
+        if (isNaN(tIdx) || !p.field[tIdx]) return;
+        sacrificed = p.field.splice(tIdx, 1)[0];
+      }
+
+      p.cost -= currentCost; p.hand.splice(handIdx, 1); p.grave.push(c);
+      
+      if (sacrificed.equips.length > 0) {
+        p.grave.push(...sacrificed.equips);
+        if (sacrificed.equips.includes("白銀蜘蛛の糸")) {
+          let partner = p.field.find(b => b.shiroganeId === sacrificed.shiroganeId);
+          if (partner) executeDestroy(p, partner, false, oppId);
+        }
+      }
+      p.deck.unshift(sacrificed.name);
+      
+      let found = null; let checked = [];
+      while(p.deck.length > 0) {
+        let rev = p.deck.pop(); 
+        if (cardDatabase[getCleanName(rev)]?.type === "蟲") { found = rev; break; } 
+        else checked.push(rev);
+      }
+      
+      checked.forEach(card => p.deck.unshift(card));
+      
+      let logMsg = "【めくったカード一覧】\n";
+      if (checked.length === 0) logMsg += "※術・強化カードはめくられませんでした。\n";
+      else checked.forEach((card, i) => logMsg += `${i + 1}枚目: ${getDisplayName(card)}\n`);
+
+      if (found) {
+        logMsg += `${checked.length + 1}枚目: ${getDisplayName(found)} (蟲！)\n\n山札から【${getDisplayName(found)}】が転生しました！\n※めくった術・強化カードは山札の下に送られました。`;
+        let newBug = { name: found, tapped: false, equips: [], currentHp: cardDatabase[found].hp, usedSkills: [], gitaiActive: cardDatabase[found].skills.some(s => s.includes("〈擬態〉")) };
+        p.field.push(newBug); 
+        alert(logMsg);
+        triggerEnterFieldEffects(p, newBug);
+      } else { 
+        alert(`${logMsg}\n山札に蟲がいませんでした。\n※めくったカードは山札の下に送られました。`); 
+      }
+    }
+    else if (c === "蟻の収穫") {
+      let targets = p.mana.filter(m => !m.endsWith('_裏') && (cardDatabase[getCleanName(m)]?.type === "術" || cardDatabase[getCleanName(m)]?.type === "強化"));
+      if (targets.length === 0) return alert("エサ場に回収できる術・強化がありません。");
+      let mIdx = parseInt(prompt("手札に戻すエサを選択:\n" + targets.map((m, i) => `${i+1}: ${getDisplayName(m)}`).join('\n'))) - 1;
+      if (isNaN(mIdx) || !targets[mIdx]) return;
+      p.cost -= currentCost; p.hand.splice(handIdx, 1); p.grave.push(c);
+      let chosen = targets[mIdx]; p.mana.splice(p.mana.indexOf(chosen), 1); p.hand.push(chosen);
+      alert(`エサ場から【${getDisplayName(chosen)}】を回収しました。`);
+      
+      let cleanChosen = getCleanName(chosen);
+      if (cleanChosen === "ワタアブラムシ" || cleanChosen === "ササコナフキツノアブラムシ") {
+        for (let k = p.field.length - 1; k >= 0; k--) {
+          let targetBug = p.field[k];
+          if (cardDatabase[targetBug.name]?.skills?.some(s => s.includes("〈好物〉"))) {
+            targetBug.currentHp -= 100;
+            if (targetBug.currentHp <= 0) { executeDestroy(p, targetBug, false, oppId); }
+          }
+        }
+      }
+    }
+    else if (c === "刺蝿の血盟") {
+      let opp = state[oppId]; let selectable = getValidAttackTargets(opp);
+      if (selectable.length === 0) return alert("破壊できる相手の蟲がいません。");
+
+      let canPayMana = p.cost >= 4; 
+      let canPayNawabari = p.nawabari.length >= 2;
+      let payMethod = "";
+
+      if (canPayMana && canPayNawabari) {
+         let res = confirm("【刺蝿の血盟】の発動コストを選択してください。\n\n[OK] 4コストを支払う\n[キャンセル] 自分の縄張りを2枚選び、捨て札にする");
+         payMethod = res ? "mana" : "nawabari";
+      } else if (canPayMana) {
+         payMethod = "mana";
+      } else if (canPayNawabari) {
+         payMethod = "nawabari";
+      } else {
+         return alert("コストが足りないか、縄張りが2枚以上ないため発動できません。");
+      }
+
+      let tIdx = parseInt(prompt("破壊する相手の蟲を選択:\n" + selectable.map(idx => `${idx+1}: ${getDisplayName(opp.field[idx].name)}`).join('\n'))) - 1;
+      if (isNaN(tIdx) || !selectable.includes(tIdx)) return alert("キャンセルしました");
+
+      if (payMethod === "mana") {
+         p.cost -= 4;
+      } else {
+         let n1 = p.nawabari.pop();
+         let n2 = p.nawabari.pop();
+         p.grave.push(getCleanName(n1), getCleanName(n2));
+         alert("縄張りを2枚捨て札に置いて発動しました。");
+      }
+
+      p.hand.splice(handIdx, 1); p.grave.push(c);
+
+      let targetBug = opp.field[tIdx];
+      alert(`相手の【${getDisplayName(targetBug.name)}】を破壊しました！`);
+      executeDestroy(opp, targetBug, false, pid);
+    }
+    else if (c === "瀬戸際の虫時雨") {
+      let bugsInMana = p.mana.filter(m => !m.endsWith('_裏') && cardDatabase[getCleanName(m)] && cardDatabase[getCleanName(m)].type === "蟲");
+      if (bugsInMana.length === 0) return alert("エサ場に出せる蟲がいません。");
+      if (p.field.length >= 6) return alert("自分の場が満杯です。");
+      let idx1 = parseInt(prompt("1体目の蟲をエサ場から選択:\n" + bugsInMana.map((m, i) => `${i+1}: ${getDisplayName(m)}`).join('\n'))) - 1;
+      if (isNaN(idx1) || !bugsInMana[idx1]) return alert("キャンセルしました。");
+      let bug1 = bugsInMana[idx1]; let color1 = cardDatabase[getCleanName(bug1)].color;
+      let remainingMana = [...p.mana]; remainingMana.splice(remainingMana.indexOf(bug1), 1);
+      let valid2ndBugs = remainingMana.filter(m => !m.endsWith('_裏') && cardDatabase[getCleanName(m)] && cardDatabase[getCleanName(m)].type === "蟲" && cardDatabase[getCleanName(m)].color === color1);
+      let bug2 = null;
+      if (valid2ndBugs.length > 0 && p.field.length + 1 < 6) {
+         let idx2 = parseInt(prompt("2体目の蟲を選択しますか？:\n" + valid2ndBugs.map((m, i) => `${i+1}: ${getDisplayName(m)}`).join('\n'))) - 1;
+         if (!isNaN(idx2) && valid2ndBugs[idx2]) { bug2 = valid2ndBugs[idx2]; }
+      }
+      p.cost -= currentCost; p.hand.splice(handIdx, 1); p.grave.push(c);
+      p.mana.splice(p.mana.indexOf(bug1), 1);
+      let nBug1 = { name: getCleanName(bug1), tapped: false, equips: [], currentHp: cardDatabase[getCleanName(bug1)].hp, usedSkills: [], shigureDestroy: true, gitaiActive: cardDatabase[getCleanName(bug1)].skills?.some(s => s.includes("〈擬態〉")) };
+      p.field.push(nBug1); triggerEnterFieldEffects(p, nBug1);
+      if (bug2) {
+          p.mana.splice(p.mana.indexOf(bug2), 1);
+          let nBug2 = { name: getCleanName(bug2), tapped: false, equips: [], currentHp: cardDatabase[getCleanName(bug2)].hp, usedSkills: [], shigureDestroy: true, gitaiActive: cardDatabase[getCleanName(bug2)].skills?.some(s => s.includes("〈擬態〉")) };
+          p.field.push(nBug2); triggerEnterFieldEffects(p, nBug2);
+      }
+      alert("エサ場から特殊召喚しました！(ターン終了時に破壊)");
+    }
+    else if (c === "叛逆の蛮勇") {
+      let graveBugs = p.grave.filter(g => cardDatabase[getCleanName(g)]?.type === "蟲");
+      if (graveBugs.length === 0 || p.field.length === 0) return alert("対象がいないため発動できません。");
+      let fIdx = parseInt(prompt("入れ替える自分の場の蟲の番号:\n" + p.field.map((f, i) => `${i+1}: ${getDisplayName(f.name)}`).join('\n'))) - 1;
+      if (isNaN(fIdx) || !p.field[fIdx]) return alert("キャンセルしました。");
+      let gIdx = parseInt(prompt("入れ替える捨て札の蟲の番号:\n" + graveBugs.map((g, i) => `${i+1}: ${getDisplayName(g)}`).join('\n'))) - 1;
+      if (isNaN(gIdx) || !graveBugs[gIdx]) return alert("キャンセルしました。");
+
+      p.cost -= currentCost; p.hand.splice(handIdx, 1); p.grave.push(c);
+      let fieldBug = p.field[fIdx];
+      let graveBug = graveBugs[gIdx];
+
+      p.field.splice(fIdx, 1);
+      p.grave.push(fieldBug.name);
+      if (fieldBug.equips && fieldBug.equips.length > 0) {
+           p.grave.push(...fieldBug.equips);
+      }
+
+      p.grave.splice(p.grave.indexOf(graveBug), 1);
+      let nBug = { name: getCleanName(graveBug), tapped: true, equips: [], currentHp: cardDatabase[getCleanName(graveBug)].hp, usedSkills: [], gitaiActive: cardDatabase[getCleanName(graveBug)].skills?.some(s => s.includes("〈擬態〉")) };
+      p.field.push(nBug);
+      triggerEnterFieldEffects(p, nBug);
+      alert(`【叛逆の蛮勇】で【${getDisplayName(fieldBug.name)}】と【${getDisplayName(graveBug)}】を入れ替えました！（このターン攻撃不可）`);
+    }
+    else if (c === "繚乱の足掻き") {
+      let handBugs = p.hand.filter((h, index) => index !== handIdx && cardDatabase[getCleanName(h)]?.type === "蟲");
+      if (handBugs.length === 0 || p.field.length === 0) return alert("対象がいないため発動できません。");
+      let validFieldIndices = [];
+      p.field.forEach((f, i) => {
+         let fCost = cardDatabase[getCleanName(f.name)].cost;
+         if (handBugs.some(h => cardDatabase[getCleanName(h)].cost === fCost)) validFieldIndices.push(i);
+      });
+      if (validFieldIndices.length === 0) return alert("同じコストの蟲が手札と場に揃っていません。");
+
+      let fIdxRaw = parseInt(prompt("手札に戻す自分の場の蟲の番号:\n" + validFieldIndices.map(i => `${i+1}: ${getDisplayName(p.field[i].name)} (コスト${cardDatabase[getCleanName(p.field[i].name)].cost})`).join('\n')));
+      let fIdx = fIdxRaw - 1;
+      if (isNaN(fIdx) || !validFieldIndices.includes(fIdx)) return alert("キャンセルしました。");
+
+      let fieldBug = p.field[fIdx];
+      let targetCost = cardDatabase[getCleanName(fieldBug.name)].cost;
+      let matchingHandBugs = handBugs.filter(h => cardDatabase[getCleanName(h)].cost === targetCost);
+
+      let hIdxRaw = parseInt(prompt("場に出す手札の蟲の番号:\n" + matchingHandBugs.map((h, i) => `${i+1}: ${getDisplayName(h)}`).join('\n')));
+      let hIdx = hIdxRaw - 1;
+      if (isNaN(hIdx) || !matchingHandBugs[hIdx]) return alert("キャンセルしました。");
+
+      let handBugName = matchingHandBugs[hIdx];
+
+      p.cost -= currentCost; p.hand.splice(handIdx, 1); p.grave.push(c);
+
+      p.field.splice(fIdx, 1);
+      p.hand.push(fieldBug.name);
+      if (fieldBug.equips && fieldBug.equips.length > 0) {
+           p.grave.push(...fieldBug.equips);
+      }
+
+      p.hand.splice(p.hand.indexOf(handBugName), 1);
+      let nBug = { name: getCleanName(handBugName), tapped: true, equips: [], currentHp: cardDatabase[getCleanName(handBugName)].hp, usedSkills: [], gitaiActive: cardDatabase[getCleanName(handBugName)].skills?.some(s => s.includes("〈擬態〉")) };
+      p.field.push(nBug);
+      triggerEnterFieldEffects(p, nBug);
+      alert(`【繚乱の足掻き】で場の【${getDisplayName(fieldBug.name)}】と手札の【${getDisplayName(handBugName)}】を入れ替えました！（このターン攻撃不可）`);
+    }
+    else if (c === "玉響の蠢き" || c === "蜉蝣の閃き" || c === "虹の架け橋" || c === "小蝿の落とし子" || c === "金色の顎門") {
+      if (c === "玉響の蠢き") {
+        let bugsInHand = p.hand.filter((h, index) => index !== handIdx && cardDatabase[getCleanName(h)]?.type === "蟲");
+        if (bugsInHand.length === 0 || p.field.length >= 6) return alert("出せる状態にありません。");
+        let idx = parseInt(prompt("出す蟲を選択:\n" + bugsInHand.map((h, i) => `${i+1}: ${getDisplayName(h)}`).join('\n'))) - 1;
+        if (isNaN(idx) || !bugsInHand[idx]) return;
+        let chosenBug = bugsInHand[idx]; p.cost -= currentCost; p.hand.splice(handIdx, 1); p.grave.push(c);
+        p.hand.splice(p.hand.indexOf(chosenBug), 1);
+        let nBug = { name: getCleanName(chosenBug), tapped: false, equips: [], currentHp: cardDatabase[getCleanName(chosenBug)].hp, usedSkills: [], shigureDestroy: true, gitaiActive: cardDatabase[getCleanName(chosenBug)].skills?.some(s => s.includes("〈擬態〉")) };
+        p.field.push(nBug); triggerEnterFieldEffects(p, nBug);
+      }
+      else if (c === "蜉蝣の閃き") {
+        let bugsInMana = p.mana.filter(m => !m.endsWith('_裏') && cardDatabase[getCleanName(m)]?.type === "蟲");
+        if (bugsInMana.length === 0 || p.field.length >= 6) return alert("出せる状態にありません。");
+        let idx = parseInt(prompt("エサ場から出す蟲を選択:\n" + bugsInMana.map((m, i) => `${i+1}: ${getDisplayName(m)}`).join('\n'))) - 1;
+        if (isNaN(idx) || !bugsInMana[idx]) return;
+        let chosenBug = bugsInMana[idx]; p.cost -= currentCost; p.hand.splice(handIdx, 1); p.grave.push(c);
+        p.mana.splice(p.mana.indexOf(chosenBug), 1);
+        let nBug = { name: getCleanName(chosenBug), tapped: false, equips: [], currentHp: cardDatabase[getCleanName(chosenBug)].hp, usedSkills: [], shigureDestroy: true, gitaiActive: cardDatabase[getCleanName(chosenBug)].skills?.some(s => s.includes("〈擬態〉")) };
+        p.field.push(nBug); triggerEnterFieldEffects(p, nBug);
+      }
+      else if (c === "虹の架け橋") {
+        let graveBugs = p.grave.filter(g => cardDatabase[getCleanName(g)]?.type === "蟲");
+        if (graveBugs.length === 0) return alert("捨て札に蟲がいません。");
+        let idx = parseInt(prompt("手札に戻す蟲を選択:\n" + graveBugs.map((g, i) => `${i+1}: ${getDisplayName(g)}`).join('\n'))) - 1;
+        if (isNaN(idx) || !graveBugs[idx]) return;
+        let chosenBug = graveBugs[idx]; p.cost -= currentCost; p.hand.splice(handIdx, 1); p.grave.push(c);
+        p.grave.splice(p.grave.indexOf(chosenBug), 1); p.hand.push(getCleanName(chosenBug));
+      }
+      else if (c === "小蝿の落とし子") {
+        let graveBugs = p.grave.filter(g => cardDatabase[getCleanName(g)] && cardDatabase[getCleanName(g)].type === "蟲" && cardDatabase[getCleanName(g)].cost <= 1);
+        if (graveBugs.length === 0 || p.field.length >= 6) return alert("出せる状態にありません。");
+        let idx1 = parseInt(prompt("1体目のコスト1以下の蟲を選択:\n" + graveBugs.map((g, idx) => `${idx+1}: ${getDisplayName(g)}`).join('\n'))) - 1;
+        if (isNaN(idx1) || !graveBugs[idx1]) return;
+        let bug1 = graveBugs[idx1]; p.grave.splice(p.grave.indexOf(bug1), 1);
+        let bug2 = null; let maxSelect = Math.min(2, 6 - p.field.length);
+        if (maxSelect >= 2) {
+           let remainGrave = p.grave.filter(g => cardDatabase[getCleanName(g)] && cardDatabase[getCleanName(g)].type === "蟲" && cardDatabase[getCleanName(g)].cost <= 1);
+           if (remainGrave.length > 0) {
+              let idx2 = parseInt(prompt("2体目の蟲を選択（スキップはそれ以外）:\n" + remainGrave.map((g, idx) => `${idx+1}: ${getDisplayName(g)}`).join('\n'))) - 1;
+              if (!isNaN(idx2) && remainGrave[idx2]) { bug2 = remainGrave[idx2]; p.grave.splice(p.grave.indexOf(bug2), 1); }
+           }
+        }
+        p.cost -= currentCost; p.hand.splice(handIdx, 1); p.grave.push(c);
+        let b1 = { name: getCleanName(bug1), tapped: true, equips: [], currentHp: cardDatabase[getCleanName(bug1)].hp, usedSkills: [], gitaiActive: cardDatabase[getCleanName(bug1)].skills?.some(s => s.includes("〈擬態〉")) };
+        p.field.push(b1); triggerEnterFieldEffects(p, b1);
+        if (bug2) {
+           let b2 = { name: getCleanName(bug2), tapped: true, equips: [], currentHp: cardDatabase[getCleanName(bug2)].hp, usedSkills: [], gitaiActive: cardDatabase[getCleanName(bug2)].skills?.some(s => s.includes("〈擬態〉")) };
+           p.field.push(b2); triggerEnterFieldEffects(p, b2);
+        }
+      }
+      else if (c === "金色の顎門") {
+        if (p.field.length === 0) return alert("対象がありません。");
+        let tIdx = parseInt(prompt("金色の顎門の対象を選択:\n" + p.field.map((f, i) => `${i+1}: ${getDisplayName(f.name)}`).join('\n'))) - 1;
+        if (isNaN(tIdx) || tIdx < 0 || tIdx >= p.field.length) return;
+        p.cost -= currentCost; p.hand.splice(handIdx, 1); p.grave.push(c);
+        p.field[tIdx].atkBoost = (p.field[tIdx].atkBoost || 0) + 500;
+      }
+    }
+  }
+}
+
+render();
+</script>
+</body>
+</html>
